@@ -142,7 +142,7 @@ const Signup = () => {
                 className="w-full p-3 border border-gray-300 rounded-md bg-white"
               >
                 <option value="">Select a role</option>
-                <option value="user">User</option>
+                <option value="user">Doctor</option>
                 <option value="admin">Admin</option>
                 <option value="vendor">Vendor</option>
               </Field>
