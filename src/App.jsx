@@ -4,6 +4,7 @@ import Signup  from './pages/Signup'
 import Login from './pages/Login'
 import ManageUsers from './components/admin/ManageUsers'
 import ManagePatients from './components/admin/ManagePatients'
+import ManageAppointments from './components/admin/ManageAppointments'
 
 
 function App() {
@@ -13,7 +14,7 @@ function App() {
       <Route path='/login' element={<Login/>}></Route>
       <Route path='/manageUsers' element={<ManageUsers/>}></Route>
       <Route path='/managepatients' element={<ManagePatients/>}></Route>
-      
+      <Route path='/manageappointments' element={<ManageAppointments/>}></Route>
     </Routes>
   )
 }
