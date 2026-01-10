@@ -5,6 +5,8 @@ import Login from './pages/Login'
 import ManageUsers from './components/admin/ManageUsers'
 import ManagePatients from './components/admin/ManagePatients'
 import ManageAppointments from './components/admin/ManageAppointments'
+import AdminSideBar from './components/AdminSideBar'
+import AdminLayout from './components/admin/AdminLayout'
 
 
 function App() {
@@ -12,9 +14,10 @@ function App() {
     <Routes>
       <Route path='/signup' element={<Signup/>}></Route>
       <Route path='/login' element={<Login/>}></Route>
-      <Route path='/manageUsers' element={<ManageUsers/>}></Route>
-      <Route path='/managepatients' element={<ManagePatients/>}></Route>
-      <Route path='/manageappointments' element={<ManageAppointments/>}></Route>
+      <Route path='/manageUsers' element={<AdminLayout><ManageUsers/></AdminLayout>}></Route>
+      <Route path='/managepatients' element={<AdminLayout><ManagePatients/></AdminLayout>}></Route>
+      <Route path='/manageappointments' element={<AdminLayout><ManageAppointments/></AdminLayout>}></Route>
+      <Route path='/adminsidebar' element={<AdminSideBar/>}></Route>
     </Routes>
   )
 }
