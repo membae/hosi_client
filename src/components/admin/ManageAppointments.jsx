@@ -28,26 +28,44 @@ function ManageAppointments() {
   const fetchData = async () => {
     try {
       setLoading(true)
+
       const [appRes, patientRes, doctorRes] = await Promise.all([
         axios.get('http://127.0.0.1:5000/appointment'),
         axios.get('http://127.0.0.1:5000/patients'),
         axios.get('http://127.0.0.1:5000/users')
       ])
 
-      // Enrich appointments with patient/doctor names
-      const enriched = appRes.data.map(a => {
-        const patient = patientRes.data.find(p => p.id === a.patient_id)
-        const doctor = doctorRes.data.find(d => d.id === a.user_id)
+      // 🔒 Force arrays (CRITICAL)
+      const appointmentsData = Array.isArray(appRes.data)
+        ? appRes.data
+        : []
+
+      const patientsData = Array.isArray(patientRes.data)
+        ? patientRes.data
+        : []
+
+      const doctorsData = Array.isArray(doctorRes.data)
+        ? doctorRes.data
+        : []
+
+      const enrichedAppointments = appointmentsData.map(a => {
+        const patient = patientsData.find(p => p.id === a.patient_id)
+        const doctor = doctorsData.find(d => d.id === a.user_id)
+
         return {
           ...a,
-          patient_name: patient ? `${patient.first_name} ${patient.last_name}` : 'N/A',
-          doctor_name: doctor ? `${doctor.first_name} ${doctor.last_name}` : 'N/A'
+          patient_name: patient
+            ? `${patient.first_name} ${patient.last_name}`
+            : 'Unknown Patient',
+          doctor_name: doctor
+            ? `${doctor.first_name} ${doctor.last_name}`
+            : 'Unknown Doctor'
         }
       })
 
-      setAppointments(enriched)
-      setPatients(patientRes.data)
-      setDoctors(doctorRes.data)
+      setAppointments(enrichedAppointments)
+      setPatients(patientsData)
+      setDoctors(doctorsData)
       setError('')
     } catch (err) {
       console.error(err)
@@ -61,17 +79,25 @@ function ManageAppointments() {
     fetchData()
   }, [])
 
-  /* ================= FORM HANDLING ================= */
+  /* ================= FORM ================= */
   const handleChange = e => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
   }
 
   const saveAppointment = async e => {
     e.preventDefault()
+
+    if (!formData.appointment_datetime) {
+      alert('Select appointment date & time')
+      return
+    }
+
     try {
       const payload = {
         ...formData,
-        appointment_datetime: new Date(formData.appointment_datetime).toISOString()
+        appointment_datetime: new Date(
+          formData.appointment_datetime
+        ).toISOString()
       }
 
       if (editingAppointment) {
@@ -81,7 +107,10 @@ function ManageAppointments() {
         )
         setEditingAppointment(null)
       } else {
-        await axios.post('http://127.0.0.1:5000/appointment', payload)
+        await axios.post(
+          'http://127.0.0.1:5000/appointment',
+          payload
+        )
       }
 
       setFormData({
@@ -102,26 +131,23 @@ function ManageAppointments() {
   const startEdit = appointment => {
     setEditingAppointment(appointment)
     setFormData({
-      appointment_datetime: appointment.appointment_datetime?.slice(0, 16),
-      status: appointment.status,
-      reason: appointment.reason,
-      patient_id: appointment.patient_id,
-      user_id: appointment.user_id
+      appointment_datetime: appointment.appointment_datetime
+        ? appointment.appointment_datetime.slice(0, 16)
+        : '',
+      status: appointment.status || '',
+      reason: appointment.reason || '',
+      patient_id: appointment.patient_id || '',
+      user_id: appointment.user_id || ''
     })
   }
 
   const deleteAppointment = async id => {
     if (!window.confirm('Delete this appointment?')) return
-    try {
-      await axios.delete(`http://127.0.0.1:5000/appointment/${id}`)
-      fetchData()
-    } catch (err) {
-      console.error(err)
-      alert('Failed to delete appointment')
-    }
+    await axios.delete(`http://127.0.0.1:5000/appointment/${id}`)
+    fetchData()
   }
 
-  /* ================= FILTERING ================= */
+  /* ================= FILTER ================= */
   const filteredAppointments = appointments.filter(a => {
     const matchesSearch =
       search === '' ||
@@ -130,7 +156,8 @@ function ManageAppointments() {
       a.patient_name?.toLowerCase().includes(search.toLowerCase()) ||
       a.doctor_name?.toLowerCase().includes(search.toLowerCase())
 
-    const matchesStatus = statusFilter === '' || a.status === statusFilter
+    const matchesStatus =
+      statusFilter === '' || a.status === statusFilter
 
     const matchesDate =
       dateFilter === '' ||
@@ -141,15 +168,19 @@ function ManageAppointments() {
 
   /* ================= PAGINATION ================= */
   const indexOfLast = currentPage * APPOINTMENTS_PER_PAGE
-  const indexOfFirst = indexOfLast - APPOINTMENTS_PER_PAGE
-  const currentAppointments = filteredAppointments.slice(indexOfFirst, indexOfLast)
-  const totalPages = Math.ceil(filteredAppointments.length / APPOINTMENTS_PER_PAGE)
+  const currentAppointments = filteredAppointments.slice(
+    indexOfLast - APPOINTMENTS_PER_PAGE,
+    indexOfLast
+  )
+  const totalPages = Math.ceil(
+    filteredAppointments.length / APPOINTMENTS_PER_PAGE
+  )
 
   useEffect(() => {
     setCurrentPage(1)
   }, [search, statusFilter, dateFilter])
 
-  if (loading) return <div className="p-6">Loading appointments...</div>
+  if (loading) return <div className="p-6">Loading...</div>
   if (error) return <div className="p-6 text-red-500">{error}</div>
 
   /* ================= UI ================= */
@@ -157,15 +188,11 @@ function ManageAppointments() {
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-4">Manage Appointments</h1>
 
-      {/* ===== ADD / EDIT FORM ===== */}
+      {/* FORM */}
       <form
         onSubmit={saveAppointment}
         className="grid grid-cols-2 gap-4 mb-6 border p-4 rounded"
       >
-        <h2 className="col-span-2 text-xl font-semibold">
-          {editingAppointment ? 'Edit Appointment' : 'Add Appointment'}
-        </h2>
-
         <input
           type="datetime-local"
           name="appointment_datetime"
@@ -177,7 +204,7 @@ function ManageAppointments() {
 
         <input
           name="status"
-          placeholder="Status (pending / confirmed / cancelled)"
+          placeholder="Status"
           value={formData.status}
           onChange={handleChange}
           className="border p-2"
@@ -216,113 +243,66 @@ function ManageAppointments() {
 
         <textarea
           name="reason"
-          placeholder="Reason"
           value={formData.reason}
           onChange={handleChange}
+          placeholder="Enter appointment reason..."
           className="border p-2 col-span-2"
           required
         />
 
-        <button
-          className={`col-span-2 p-2 rounded text-white ${
-            editingAppointment ? 'bg-blue-600' : 'bg-green-600'
-          }`}
-        >
+        <button className="col-span-2 bg-green-600 text-white p-2 rounded">
           {editingAppointment ? 'Update Appointment' : 'Add Appointment'}
         </button>
       </form>
 
-      {/* ===== FILTERS ===== */}
-      <div className="grid grid-cols-3 gap-4 mb-4">
-        <input
-          type="text"
-          placeholder="Search (reason, status, patient, doctor)"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          className="border p-2 col-span-2"
-        />
-
-        <select
-          value={statusFilter}
-          onChange={e => setStatusFilter(e.target.value)}
-          className="border p-2"
-        >
-          <option value="">All Statuses</option>
-          <option value="pending">Pending</option>
-          <option value="confirmed">Confirmed</option>
-          <option value="cancelled">Cancelled</option>
-        </select>
-
-        <input
-          type="date"
-          value={dateFilter}
-          onChange={e => setDateFilter(e.target.value)}
-          className="border p-2 col-span-3"
-        />
-      </div>
-
-      {/* ===== TABLE ===== */}
-      <table className="w-full border">
-        <thead className="bg-gray-100">
-          <tr>
-            <th className="border p-2">Date</th>
-            <th className="border p-2">Status</th>
-            <th className="border p-2">Reason</th>
-            <th className="border p-2">Patient</th>
-            <th className="border p-2">Doctor</th>
-            <th className="border p-2">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {currentAppointments.map(a => (
-            <tr key={a.id}>
-              <td className="border p-2">
-                {new Date(a.appointment_datetime).toLocaleString()}
-              </td>
-              <td className="border p-2">{a.status}</td>
-              <td className="border p-2">{a.reason}</td>
-              <td className="border p-2">{a.patient_name}</td>
-              <td className="border p-2">{a.doctor_name}</td>
-              <td className="border p-2 space-x-2">
-                <button
-                  onClick={() => startEdit(a)}
-                  className="bg-blue-500 text-white px-3 py-1 rounded"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => deleteAppointment(a.id)}
-                  className="bg-red-600 text-white px-3 py-1 rounded"
-                >
-                  Delete
-                </button>
-              </td>
-            </tr>
-          ))}
-          {currentAppointments.length === 0 && (
+      {/* EMPTY STATE */}
+      {appointments.length === 0 ? (
+        <div className="text-center text-gray-500">
+          No appointments yet
+        </div>
+      ) : (
+        <table className="w-full border">
+          <thead className="bg-gray-100">
             <tr>
-              <td colSpan="6" className="text-center p-4">
-                No appointments found
-              </td>
+              <th className="border p-2">Date</th>
+              <th className="border p-2">Status</th>
+              <th className="border p-2">Reason</th>
+              <th className="border p-2">Patient</th>
+              <th className="border p-2">Doctor</th>
+              <th className="border p-2">Actions</th>
             </tr>
-          )}
-        </tbody>
-      </table>
-
-      {/* ===== PAGINATION ===== */}
-      <div className="mt-4 flex gap-2">
-        {Array.from({ length: totalPages }).map((_, i) => (
-          <button
-            key={i}
-            onClick={() => setCurrentPage(i + 1)}
-            className={`px-3 py-1 border rounded ${
-              currentPage === i + 1 ? 'bg-blue-500 text-white' : ''
-            }`}
-          >
-            {i + 1}
-          </button>
-        ))}
-      </div>
+          </thead>
+          <tbody>
+            {currentAppointments.map(a => (
+              <tr key={a.id}>
+                <td className="border p-2">
+                  {a.appointment_datetime
+                    ? new Date(a.appointment_datetime).toLocaleString()
+                    : '—'}
+                </td>
+                <td className="border p-2">{a.status}</td>
+                <td className="border p-2">{a.reason}</td>
+                <td className="border p-2">{a.patient_name}</td>
+                <td className="border p-2">{a.doctor_name}</td>
+                <td className="border p-2">
+                  <button
+                    onClick={() => startEdit(a)}
+                    className="bg-blue-500 text-white px-2 py-1 mr-2 rounded"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => deleteAppointment(a.id)}
+                    className="bg-red-600 text-white px-2 py-1 rounded"
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
   )
 }
