@@ -16,6 +16,9 @@ function FullAnalyticsDashboard() {
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
+  // ===== Step 1: Get currently logged-in user from localStorage =====
+  const loggedInUser = JSON.parse(localStorage.getItem('user'));
+
   /* ================= FETCH DATA ================= */
   const fetchData = async () => {
     try {
@@ -113,7 +116,13 @@ function FullAnalyticsDashboard() {
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">Hospital Analytics Dashboard</h1>
+      {/* ===== Welcome Note ===== */}
+      <h1 className="text-2xl font-bold mb-2">
+        Welcome{loggedInUser ? `, ${loggedInUser.last_name}` : ''} 👋
+      </h1>
+      <p className="text-gray-600 mb-6">
+        Here’s an overview of hospital performance and analytics
+      </p>
 
       {/* ===== Date Range Filter ===== */}
       <div className="flex gap-4 mb-6">
