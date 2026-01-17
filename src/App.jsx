@@ -8,6 +8,7 @@ import ManageAppointments from './components/admin/ManageAppointments'
 import AdminSideBar from './components/AdminSideBar'
 import AdminLayout from './components/admin/AdminLayout'
 import Dashboard from './components/admin/Dashboard'
+import Reports from './components/admin/Reports'
 
 
 function App() {
@@ -20,6 +21,7 @@ function App() {
       <Route path='/manageappointments' element={<AdminLayout><ManageAppointments/></AdminLayout>}></Route>
       <Route path='/adminsidebar' element={<AdminSideBar/>}></Route>
       <Route path='/dashboard' element={<AdminLayout><Dashboard/></AdminLayout>}></Route>
+      <Route path='/reports' element={<AdminLayout><Reports/></AdminLayout>}></Route>
     </Routes>
   )
 }
